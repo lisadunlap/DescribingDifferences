@@ -16,7 +16,7 @@ from components.proposer import (
     LLMPairwiseProposerWithQuestion,
     DualSidedLLMProposer
 )
-from components.ranker import CLIPRanker, LLMRanker, NullRanker, VLMRanker, LLMOnlyRanker, ClusterRanker
+from components.ranker import CLIPRanker, LLMRanker, NullRanker, VLMRanker, LLMOnlyRanker, ClusterRanker, DualClusterRanker
 
 
 def load_config(config: str) -> Dict:
@@ -68,22 +68,10 @@ def propose(args: Dict, dataset1: List[Dict], dataset2: List[Dict]) -> List[str]
 
     proposer = eval(proposer_args["method"])(proposer_args)
     hypotheses, logs, images = proposer.propose(dataset1, dataset2)
-    print(images)
+    print(hypotheses)
     if args["wandb"]:
         wandb.log({"logs": wandb.Table(dataframe=pd.DataFrame(logs))})
         wandb.log({"llm_outputs": wandb.Table(dataframe=pd.DataFrame(images))})
-        if images is not None:
-            for i in range(len(images)):
-                wandb.log(
-                    {
-                        f"group 1 images ({dataset1[0]['group_name']})": images[i][
-                            "images_group_1"
-                        ],
-                        f"group 2 images ({dataset2[0]['group_name']})": images[i][
-                            "images_group_2"
-                        ],
-                    }
-                )
     return hypotheses
 
 
@@ -96,18 +84,14 @@ def rank(
 ) -> List[str]:
     ranker_args = args["ranker"]
     ranker_args["seed"] = args["seed"]
+    ranker_args['group_names'] = group_names
 
     ranker = eval(ranker_args["method"])(ranker_args)
 
     scored_hypotheses = ranker.rerank_hypotheses(hypotheses, dataset1, dataset2)
-    # if args["wandb"]:
-    #     table_hypotheses = wandb.Table(dataframe=pd.DataFrame(scored_hypotheses))
-    #     wandb.log({"scored hypotheses": table_hypotheses})
-    #     for i in range(5):
-    #         wandb.summary[f"top_{i + 1}_difference"] = scored_hypotheses[i][
-    #             "hypothesis"
-    #         ].replace('"', "")
-    #         wandb.summary[f"top_{i + 1}_score"] = scored_hypotheses[i]["auroc"]
+    if args["wandb"]:
+        table_hypotheses = wandb.Table(dataframe=pd.DataFrame(scored_hypotheses))
+        wandb.log({"scored hypotheses": table_hypotheses})
 
     if args["evaluator"]["method"] != "NullEvaluator":
         scored_groundtruth = ranker.rerank_hypotheses(
@@ -120,26 +104,6 @@ def rank(
             wandb.log({"scored groundtruth": table_groundtruth})
 
     return [hypothesis["hypothesis"] for hypothesis in scored_hypotheses]
-
-
-def evaluate(args: Dict, ranked_hypotheses: List[str], group_names: List[str]) -> Dict:
-    evaluator_args = args["evaluator"]
-
-    evaluator = eval(evaluator_args["method"])(evaluator_args)
-
-    metrics, evaluated_hypotheses = evaluator.evaluate(
-        ranked_hypotheses,
-        group_names[0],
-        group_names[1],
-    )
-
-    if args["wandb"] and evaluator_args["method"] != "NullEvaluator":
-        table_evaluated_hypotheses = wandb.Table(
-            dataframe=pd.DataFrame(evaluated_hypotheses)
-        )
-        wandb.log({"evaluated hypotheses": table_evaluated_hypotheses})
-        wandb.log(metrics)
-    return metrics
 
 
 @click.command()
@@ -155,15 +119,14 @@ def main(config):
 
     logging.info("Proposing hypotheses...")
     hypotheses = propose(args, dataset1, dataset2)
-    # print(hypotheses)
+    print(hypotheses)
+    print("######################################")
+    print("######################################")
+    print("######################################")
 
     logging.info("Ranking hypotheses...")
     ranked_hypotheses = rank(args, hypotheses, dataset1, dataset2, group_names)
     # print(ranked_hypotheses)
-
-    logging.info("Evaluating hypotheses...")
-    metrics = evaluate(args, ranked_hypotheses, group_names)
-    # print(metrics)
 
 
 if __name__ == "__main__":

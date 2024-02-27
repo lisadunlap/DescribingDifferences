@@ -57,6 +57,8 @@ data:
   group2: "imagenet"
 """
         cfg_file = f"configs/sweep_imagenetr/{group_name}-imagenet.yaml"
+        # make parent directory if it doesn't exist
+        os.makedirs(os.path.dirname(cfg_file), exist_ok=True)
         with open(cfg_file, "w") as f:
             f.write(cfg)
         print(f"python main.py --config {cfg_file}")
@@ -78,6 +80,7 @@ data:
         cfg_file = (
             f"configs/sweep_imagenetstar/{group_name.replace(' ', '_')}-base.yaml"
         )
+        os.makedirs(os.path.dirname(cfg_file), exist_ok=True)
         with open(cfg_file, "w") as f:
             f.write(cfg)
         print(f"python main.py --config {cfg_file}")
