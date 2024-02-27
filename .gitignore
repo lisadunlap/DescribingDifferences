@@ -59,6 +59,7 @@ caption.py
 caption_things.py
 data/ilsvrc_2024-01-04_1601
 cache/
+LLaVA/
 
 # Unit test / coverage reports
 htmlcov/
