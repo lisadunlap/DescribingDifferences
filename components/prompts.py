@@ -131,6 +131,33 @@ RUIQI_DIFF_PROMPT_LONGER = """
     Again, I want to figure out what kind of distribution shift are there. List properties that holds more often for the images (not captions) in group A compared to group B. Answer with a list (separated by bullet points "*"). Your response:
 """
 
+# CLIP_FRIENDLY = """
+#     The following are the result of captioning two groups of images:
+
+#     {text}
+
+#     I am a machine learning researcher trying to figure out the major differences between these two groups so I can better understand my data.
+
+#     Come up with 10 distinct concepts that are more likely to be true for Group A compared to Group B. Please write a list of captions (separated by bullet points "*"). For example:
+#     * "a dog next to a horse"
+#     * "a car in the rain"
+#     * "low quality"
+#     * "cars from a side view"
+#     * "people in a intricate dress"
+#     * "a joyful atmosphere"
+
+#     Do not talk about the caption, e.g., "caption with one word" and do not list more than one concept. The hypothesis should be a caption, so hypotheses like "more of ...", "presence of ...", "images with ..." are incorrect. Also do not enumerate possibilities within parentheses. Here are examples of bad outputs and their corrections:
+#     * INCORRECT: "various nature environments like lakes, forests, and mountains" CORRECTED: "nature"
+#     * INCORRECT: "images of household object (e.g. bowl, vacuum, lamp)" CORRECTED: "household objects"
+#     * INCORRECT: "Presence of baby animals" CORRECTED: "baby animals"
+#     * INCORRECT: "Different types of vehicles including cars, trucks, boats, and RVs" CORRECTED: "vehicles"
+#     * INCORRECT: "Images involving interaction between humans and animals" CORRECTED: "interaction between humans and animals"
+#     * INCORRECT: "More realistic images" CORRECTED: "realistic images" 
+#     * INCORRECT: "Insects (cockroach, dragonfly, grasshopper)" CORRECTED: "insects"
+
+#     Again, I want to figure out what kind of distribution shift are there. List properties that hold more often for the images (not captions) in group A compared to group B. Answer with a list (separated by bullet points "*"). Your response:
+# """
+
 CLIP_FRIENDLY = """
     The following are the result of captioning two groups of images:
 
@@ -141,21 +168,17 @@ CLIP_FRIENDLY = """
     Come up with 10 distinct concepts that are more likely to be true for Group A compared to Group B. Please write a list of captions (separated by bullet points "*"). For example:
     * "a dog next to a horse"
     * "a car in the rain"
-    * "low quality"
-    * "cars from a side view"
+    * "an images with a lot of clutter"
+    * "math problems which include diagrams of a circle"
     * "people in a intricate dress"
     * "a joyful atmosphere"
 
     Do not talk about the caption, e.g., "caption with one word" and do not list more than one concept. The hypothesis should be a caption, so hypotheses like "more of ...", "presence of ...", "images with ..." are incorrect. Also do not enumerate possibilities within parentheses. Here are examples of bad outputs and their corrections:
-    * INCORRECT: "various nature environments like lakes, forests, and mountains" CORRECTED: "nature"
-    * INCORRECT: "images of household object (e.g. bowl, vacuum, lamp)" CORRECTED: "household objects"
     * INCORRECT: "Presence of baby animals" CORRECTED: "baby animals"
     * INCORRECT: "Different types of vehicles including cars, trucks, boats, and RVs" CORRECTED: "vehicles"
-    * INCORRECT: "Images involving interaction between humans and animals" CORRECTED: "interaction between humans and animals"
     * INCORRECT: "More realistic images" CORRECTED: "realistic images" 
-    * INCORRECT: "Insects (cockroach, dragonfly, grasshopper)" CORRECTED: "insects"
 
-    Again, I want to figure out what kind of distribution shift are there. List properties that hold more often for the images (not captions) in group A compared to group B. Answer with a list (separated by bullet points "*"). Your response:
+    Again, I want to figure out what kind of distribution shift are there. List properties that hold more often for the images (not captions) in group A compared to group B. Your definitions should be less than 10 words. Answer with a list (separated by bullet points "*"). Your response:
 """
 
 VLM_PROMPT = """
@@ -259,6 +282,21 @@ DIFFUSION_LLM_PROMPT = """
 
 LLM_ONLY_PROMPT = """
     The following are the result of asking two different language models to generate an answer for the same questions:
+
+    {text}
+
+    I am a machine learning researcher trying to figure out the major differences between these two groups so I can correctly identify which model generated which response for unseen questions. This is a very samll portion of the data, so I want the differences to be general.
+
+    Please output a list (separated by bullet points "*") of distinct concepts or styles that appear more in the outputs of Model A compared to Model B. An example of the desired output format:
+    * "casual language"
+    * "lists with repeating phrases"
+    * "polite language"
+
+    Do not have "model A" or "model B" in your response. Please order your response in terms of the most common differences between the two models. Your response:
+"""
+
+LLM_DIFF_PROMPT = """
+    The following are a two seperate list of prompts that users have asked of a chatbot:
 
     {text}
 

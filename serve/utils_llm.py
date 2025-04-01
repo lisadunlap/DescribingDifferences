@@ -7,8 +7,9 @@ from typing import List
 import lmdb
 import openai
 from openai import OpenAI
+# import anthropic
 
-from serve.global_vars import LLM_CACHE_FILE, VICUNA_URL
+from serve.global_vars import LLM_CACHE_FILE, VICUNA_URL, OPENAI_API_KEY, ANTHROPIC_API_KEY, GOOGLE_API_KEY
 from serve.utils_general import get_from_cache, save_to_cache
 
 logging.basicConfig(level=logging.INFO)
@@ -17,19 +18,22 @@ if not os.path.exists(LLM_CACHE_FILE):
     os.makedirs(LLM_CACHE_FILE)
 
 llm_cache = lmdb.open(LLM_CACHE_FILE, map_size=int(1e11))
-openai.api_key = os.environ["OPENAI_API_KEY"]
+os.environ["OPENAI_API_KEY"] = OPENAI_API_KEY
 
 
 def get_llm_output(prompt: str, model: str) -> str:
     api_base = {
         "gpt-3.5-turbo": "https://api.openai.com/v1",
         "gpt-4": "https://api.openai.com/v1",
+        "gpt-4o-mini": "https://api.openai.com/v1",
+        "gpt-4o": "https://api.openai.com/v1",
         "vicuna": VICUNA_URL,
     }
-    openai.api_base = api_base[model]
+    # TODO: The 'openai.api_base' option isn't read in the client API. You will need to pass it when you instantiate the client, e.g. 'OpenAI(base_url=api_base[model])'
+    # openai.api_base = api_base[model]
     client = OpenAI()
 
-    if model in ["gpt-3.5-turbo", "gpt-4"]:
+    if "gpt" in model:
         messages = [
             {"role": "system", "content": "You are a helpful assistant."},
             {"role": "user", "content": prompt},
@@ -45,7 +49,7 @@ def get_llm_output(prompt: str, model: str) -> str:
 
     for _ in range(3):
         try:
-            if model in ["gpt-3.5-turbo", "gpt-4"]:
+            if "gpt" in model:
                 completion = client.chat.completions.create(
                     model=model,
                     messages=messages,

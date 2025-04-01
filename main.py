@@ -100,14 +100,14 @@ def rank(
     ranker = eval(ranker_args["method"])(ranker_args)
 
     scored_hypotheses = ranker.rerank_hypotheses(hypotheses, dataset1, dataset2)
-    # if args["wandb"]:
-    #     table_hypotheses = wandb.Table(dataframe=pd.DataFrame(scored_hypotheses))
-    #     wandb.log({"scored hypotheses": table_hypotheses})
-    #     for i in range(5):
-    #         wandb.summary[f"top_{i + 1}_difference"] = scored_hypotheses[i][
-    #             "hypothesis"
-    #         ].replace('"', "")
-    #         wandb.summary[f"top_{i + 1}_score"] = scored_hypotheses[i]["auroc"]
+    if args["wandb"]:
+        table_hypotheses = wandb.Table(dataframe=pd.DataFrame(scored_hypotheses))
+        wandb.log({"scored hypotheses": table_hypotheses})
+        for i in range(5):
+            wandb.summary[f"top_{i + 1}_difference"] = scored_hypotheses[i][
+                "hypothesis"
+            ].replace('"', "")
+            wandb.summary[f"top_{i + 1}_score"] = scored_hypotheses[i]["auroc"]
 
     if args["evaluator"]["method"] != "NullEvaluator":
         scored_groundtruth = ranker.rerank_hypotheses(
@@ -155,6 +155,9 @@ def main(config):
 
     logging.info("Proposing hypotheses...")
     hypotheses = propose(args, dataset1, dataset2)
+    # strip any quotes or cases and deduplicate
+    hypotheses = [h.replace('"', '').replace("'", "").lower() for h in hypotheses]
+    hypotheses = list(set(hypotheses))[:25]
     # print(hypotheses)
 
     logging.info("Ranking hypotheses...")

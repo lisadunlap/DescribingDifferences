@@ -14,7 +14,8 @@ from components.proposer import (
     VLMFeatureProposer,
     VLMProposer,
     LLMPairwiseProposerWithQuestion,
-    DualSidedLLMProposer
+    DualSidedLLMProposer,
+    LLMOnlyProposer
 )
 from components.ranker import CLIPRanker, LLMRanker, NullRanker, VLMRanker, LLMOnlyRanker, ClusterRanker, DualClusterRanker
 
@@ -126,7 +127,7 @@ def main(config):
 
     logging.info("Ranking hypotheses...")
     ranked_hypotheses = rank(args, hypotheses, dataset1, dataset2, group_names)
-    # print(ranked_hypotheses)
+    print(ranked_hypotheses)
 
 
 if __name__ == "__main__":

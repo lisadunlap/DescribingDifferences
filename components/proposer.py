@@ -110,6 +110,34 @@ class LLMProposer(Proposer):
         logs = {"prompt": prompt, "output": output}
         return hypotheses, logs
     
+class LLMOnlyProposer(Proposer):
+    def __init__(self, args: Dict):
+        super().__init__(args)
+        self.prompt = getattr(prompts, args["prompt"])
+
+    def get_hypotheses(
+        self, sampled_dataset1: List[Dict], sampled_dataset2: List[Dict]
+    ) -> Tuple[List[str], Dict]:
+        captions1 = [
+            f"Group A: {item['question']}".replace("\n", " ").strip()
+            for item in sampled_dataset1
+        ]
+        captions2 = [
+            f"Group B: {item['question']}".replace("\n", " ").strip()
+            for item in sampled_dataset2
+        ]
+        caption_concat = "\n".join(captions1 + captions2)
+        prompt = self.prompt.format(text=caption_concat)
+        output = get_llm_output(prompt, self.args["model"])
+        hypotheses = [line.replace("* ", "") for line in output.splitlines()]
+        logs = {"prompt": prompt, "output": output}
+        return hypotheses, logs
+    
+    def visualize(
+        self, sampled_dataset1: List[Dict], sampled_dataset2: List[Dict]
+    ) -> Dict:
+        return {}
+
 class LLMPairwiseProposerWithQuestion(Proposer):
     def __init__(self, args: Dict):
         super().__init__(args)

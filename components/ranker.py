@@ -171,13 +171,29 @@ class CLIPRanker(Ranker):
         super().__init__(args)
 
     def score_hypothesis(self, hypothesis: str, dataset: List[dict]) -> List[float]:
+        import faiss
+        
+        # Get embeddings
         image_features = get_embeddings(
             [item["path"] for item in dataset], self.args["clip_model"], "image"
         )
         text_features = get_embeddings([hypothesis], self.args["clip_model"], "text")
-        similarity = image_features @ text_features.T
-        scores = similarity.squeeze(1).tolist()
-        return scores
+        
+        # Convert to float32 and ensure correct shape
+        image_features = np.ascontiguousarray(image_features.astype('float32'))
+        text_features = np.ascontiguousarray(text_features.astype('float32'))
+        
+        # Normalize vectors for cosine similarity
+        faiss.normalize_L2(image_features)
+        faiss.normalize_L2(text_features)
+        
+        # Create FAISS index
+        index = faiss.IndexFlatIP(image_features.shape[1])  # Inner product = cosine similarity for normalized vectors
+        index.add(image_features)
+        
+        # Search
+        scores, _ = index.search(text_features, image_features.shape[0])
+        return scores[0].tolist()  # Return scores for the single hypothesis
 
 
 class VLMRanker(Ranker):
@@ -291,13 +307,6 @@ class ClusterRanker(Ranker):
 
     def score_hypothesis(self, hypothesis: str, dataset: List[Dict]) -> List[float]:
         response, counts = cluster_with_gpt([hypothesis])
-        print("----------------------------")
-        print("----------------------------")
-        print("RESPONSE", response)
-        print("----------------------------")
-        print("----------------------------")
-        exit(0)
-
         log_clusters(counts)
 
     def rerank_hypotheses(
@@ -311,7 +320,6 @@ class ClusterRanker(Ranker):
     
 from components.clustering import cluster_with_gpt, log_clusters, batch_cluster_with_gpt
 class DualClusterRanker(Ranker):
-    random.seed(42)
 
     def rerank_hypotheses(
         self, hypotheses: List[str], dataset1: List[dict], dataset2: List[dict]
@@ -322,25 +330,28 @@ class DualClusterRanker(Ranker):
         group_b_hypotheses = hypotheses["Model B contains more"]
         # mix the hypotheses and keep a lsit of which group they belong to
         mixed_hypotheses = group_a_hypotheses + group_b_hypotheses
-        mixed_groups = [0] * len(group_a_hypotheses) + [1] * len(group_b_hypotheses)
-        # shuffle
-        zipped = list(zip(mixed_hypotheses, mixed_groups))
-        random.shuffle(zipped)
-        mixed_hypotheses, mixed_groups = zip(*zipped)
+        random.shuffle(mixed_hypotheses)
+        # mixed_groups = [0] * len(group_a_hypotheses) + [1] * len(group_b_hypotheses)
+        # zipped = list(zip(mixed_hypotheses, mixed_groups))
+        # random.shuffle(zipped)
+        # mixed_hypotheses, mixed_groups = zip(*zipped)
         response, counts = batch_cluster_with_gpt(mixed_hypotheses)
         log_clusters(counts)
         # look through the counts and assign the hypotheses to the groups
         results = []
-        print("HELLOOOOO LISA")
-        print(counts[0])
         for hpy in counts:
-            group_a_counts = sum([1 for h in hpy['examples'] if h in group_a_hypotheses])
-            group_b_counts = sum([1 for h in hpy['examples'] if h in group_b_hypotheses])
+            group_a_hyp = [h for h in hpy['examples'] if h in group_a_hypotheses]
+            group_b_hyp = [h for h in hpy['examples'] if h in group_b_hypotheses]
+            group_a_counts, group_b_counts = len(group_a_hyp), len(group_b_hyp)
+            # group_a_counts = sum([1 for h in hpy['examples'] if h in group_a_hypotheses])
+            # group_b_counts = sum([1 for h in hpy['examples'] if h in group_b_hypotheses])
             hpy[f'{self.group_names[0]}_counts'] = group_a_counts
             hpy[f'{self.group_names[1]}_counts'] = group_b_counts
-            hpy[f'{self.group_names[0]}_score'] = round(group_a_counts / len(group_a_hypotheses), 3)
-            hpy[f'{self.group_names[1]}_score'] = round(group_b_counts / len(group_b_hypotheses), 3)
-            hpy['diff_score'] = round(abs(hpy[f'{self.group_names[0]}_score'] - hpy[f'{self.group_names[1]}_score']), 3)
+            hpy[f'{self.group_names[0]}_proportion'] = round(group_a_counts / len(group_a_hypotheses), 3)
+            hpy[f'{self.group_names[1]}_proportion'] = round(group_b_counts / len(group_b_hypotheses), 3)
+            hpy[f'{self.group_names[0]}_differences'] = group_a_hyp
+            hpy[f'{self.group_names[1]}_differences'] = group_b_hyp
+            hpy['diff_score'] = round(abs(hpy[f'{self.group_names[0]}_proportion'] - hpy[f'{self.group_names[1]}_proportion']), 3)
             results.append(hpy)
         scored_hypotheses = sorted(results, key=lambda x: x["diff_score"], reverse=True)
         print(scored_hypotheses)
