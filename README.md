@@ -1,15 +1,13 @@
-# VisDiff: Describing Differences in Image Sets with Natural Language
+# VisDiff: Describing Differences in Image or Text Sets with Natural Language
 
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
 [![Python](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-311/)
 [![Pytorch](https://img.shields.io/badge/Pytorch-2.1-red.svg)](https://pytorch.org/get-started/previous-versions/#v21)
 [![Black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 
-This repo provides the PyTorch source code of our paper: [Describing Differences in Image Sets with Natural Language](https://arxiv.org/abs/2312.02974). Check out project page [here](https://understanding-visual-datasets.github.io/VisDiff-website/)!
+**This repo is a fork of [VisDiff](https://github.com/understanding-visual-datasets/VisDiff) with the text only version. It is not super clean yet.**
 
-## 🔮 Abstract
-
-How do two sets of images differ? Discerning set-level differences is crucial for understanding model behaviors and analyzing datasets, yet manually sifting through thousands of images is impractical. To aid in this discovery process, we explore the task of automatically describing the differences between two **sets** of images, which we term Set Difference Captioning. This task takes in image sets $\mathcal{D}_A$ and $\mathcal{D}_B$, and outputs a description that is more often true on $\mathcal{D}_A$ than $\mathcal{D}_B$. We outline a two-stage approach that first proposes candidate difference descriptions from image sets and then re-ranks the candidates by checking how well they can differentiate the two sets. We introduce VisDiff, which first captions the images and prompts a language model to propose candidate descriptions, then re-ranks these descriptions using CLIP. To evaluate VisDiff, we collect VisDiffBench, a dataset with 187 paired image sets with ground truth difference descriptions. We apply VisDiff to various domains, such as comparing datasets (e.g., ImageNet vs. ImageNetV2), comparing classification models (e.g., zero-shot CLIP vs. supervised ResNet), characterizing differences between generative models (e.g., StableDiffusionV1 and V2), and discovering what makes images memorable. Using VisDiff, we are able to find interesting and previously unknown differences in datasets and models, demonstrating its utility in revealing nuanced insights.
+This repo provides the PyTorch source code of our paper: [Describing Differences in Image Sets with Natural Language](https://arxiv.org/abs/2312.02974). Check out project page [here](https://understanding-visual-datasets.github.io/VisDiff-website/)! It also contains the code for the text only version of VisDiff.
 
 <img src="data/teaser.png"></img>
 
@@ -41,7 +39,9 @@ If you want to use VisDiff on your own datasets, you can follow the following st
 
 ### 1. Convert Datasets
 
-Convert your dataset to CSV format with two required columns `path` and `group_name`. An example of the CSV files can be found in [data/examples.csv](data/Examples.csv).
+Convert your dataset to CSV format with two required columns `path` and `group_name`. An example of the CSV files can be found in [data/Examples.csv](data/Examples.csv).
+
+**For text only**, replace the `path` column with `question`. It doesn't really need to be a question, but it should be text.
 
 ### 2. Define Configs
 
@@ -68,27 +68,10 @@ Finally, you can run the following command to describe the differences between t
 python main.py --config configs/example.yaml
 ```
 
-## 📄 Reproduce Paper Results
-
-### 📊 VisDiffBench (Section 5 in Paper)
-
-To evaluate our system, we collected VisDiffBench, a benchmark of 187 paired image sets with ground truth difference descriptions ([download link](https://drive.google.com/file/d/1vghFd0rB5UTBaeR5rdxhJe3s7OOdRtkY)). To evaluate performance on VisDiffBench, we ask VisDiff to output a description for each paired set and compare it to the ground truth using [GPT-4 evaluator](./components/evaluator.py).
-
-VisDiffBench is collected from the following datasets:
-
-- PairedImageSets ([Collection Code](./data/pairedimagesets/)) 
-- [ImageNetR](https://github.com/hendrycks/imagenet-r)
-- [ImageNet*](https://huggingface.co/datasets/madrylab/imagenet-star)
-
-To evaluate VisDiff, you can run the codes in [sweeps/](./sweeps/):
+To run the text only version:
 ```bash
-python sweeps/sweep_pairedimagesets.py
-python sweeps/sweep_imagenet.py
+python main.py --config configs/llm_only.yaml
 ```
-
-### 💎 Applications (Section 6 in Paper)
-
-For each application, we provide the corresponding codes and usages in [applications](applications/) folder.
 
 ## 🎯 Citation
 
