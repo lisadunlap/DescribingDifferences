@@ -1,4 +1,4 @@
-# VisDiff: Describing Differences in Image or Text Sets with Natural Language
+# Describing Differences in Image or Text Sets with Natural Language
 
 [![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://lbesson.mit-license.org/)
 [![Python](https://img.shields.io/badge/python-3.11-blue.svg)](https://www.python.org/downloads/release/python-311/)
