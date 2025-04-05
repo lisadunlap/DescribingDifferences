@@ -5,7 +5,8 @@ import click
 import pandas as pd
 from omegaconf import OmegaConf
 from tqdm import tqdm
-
+from serve.utils_llm import get_llm_output
+import re
 import wandb
 from components.evaluator import GPTEvaluator, NullEvaluator
 from components.proposer import (
@@ -14,7 +15,8 @@ from components.proposer import (
     VLMFeatureProposer,
     VLMProposer,
     LLMPairwiseProposerWithQuestion,
-    DualSidedLLMProposer
+    DualSidedLLMProposer,
+    LLMOnlyProposer
 )
 from components.ranker import CLIPRanker, LLMRanker, NullRanker, VLMRanker, LLMOnlyRanker, ClusterRanker
 
@@ -61,6 +63,19 @@ def load_data(args: Dict) -> Tuple[List[Dict], List[Dict], List[str]]:
     return dataset1, dataset2, group_names
 
 
+reduction_prompt_template = """Below is a list of properties, several of which are similar. Please reduce this to a list of the 25 most common distinct properties, ordered by frequency of occurrence.
+
+{properties}
+
+Only respond with a numbered list of properties, no other text.
+"""
+
+def reduce_hypotheses(hypotheses: List[str]) -> List[str]:
+    reduction_prompt = reduction_prompt_template.format(properties="\n".join(hypotheses))
+    reduced_hypotheses = get_llm_output(reduction_prompt, model="gpt-4o")
+    reduced_hypotheses = [re.sub(r'^\d+\.\s*|\*\s*', '', h.strip()) for h in reduced_hypotheses.split("\n") if h.strip()]
+    return reduced_hypotheses
+
 def propose(args: Dict, dataset1: List[Dict], dataset2: List[Dict]) -> List[str]:
     proposer_args = args["proposer"]
     proposer_args["seed"] = args["seed"]
@@ -68,11 +83,10 @@ def propose(args: Dict, dataset1: List[Dict], dataset2: List[Dict]) -> List[str]
 
     proposer = eval(proposer_args["method"])(proposer_args)
     hypotheses, logs, images = proposer.propose(dataset1, dataset2)
-    print(images)
     if args["wandb"]:
         wandb.log({"logs": wandb.Table(dataframe=pd.DataFrame(logs))})
         wandb.log({"llm_outputs": wandb.Table(dataframe=pd.DataFrame(images))})
-        if images is not None:
+        if "images_group_1" in images[0]:
             for i in range(len(images)):
                 wandb.log(
                     {
@@ -84,6 +98,9 @@ def propose(args: Dict, dataset1: List[Dict], dataset2: List[Dict]) -> List[str]
                         ],
                     }
                 )
+    print(f"Hypotheses length: {len(hypotheses)}")
+    hypotheses = reduce_hypotheses(hypotheses)
+    print(f"Reduced hypotheses length: {len(hypotheses)}")
     return hypotheses
 
 
@@ -155,11 +172,8 @@ def main(config):
 
     logging.info("Proposing hypotheses...")
     hypotheses = propose(args, dataset1, dataset2)
-    # strip any quotes or cases and deduplicate
-    hypotheses = [h.replace('"', '').replace("'", "").lower() for h in hypotheses]
-    hypotheses = list(set(hypotheses))[:25]
     # print(hypotheses)
-
+    
     logging.info("Ranking hypotheses...")
     ranked_hypotheses = rank(args, hypotheses, dataset1, dataset2, group_names)
     # print(ranked_hypotheses)

@@ -160,7 +160,6 @@ class LLMPairwiseProposerWithQuestion(Proposer):
         """
         Given two datasets, return a list of hypotheses
         """
-        print(dataset1[0].keys())
         assert "question" in dataset1[0].keys(), "'question' column not in dataset"
         all_hypotheses = []
         all_logs = []
@@ -230,8 +229,6 @@ class DualSidedLLMProposer(LLMPairwiseProposerWithQuestion):
         caption_concat = "\n".join(question + captions1 + captions2)
         prompt = self.prompt.format(text=caption_concat)
         output = get_llm_output(prompt, self.args["model"])
-        print(output)
-        print("-----------------------")
         hypotheses = ast.literal_eval(output)
         logs = {"prompt": prompt, "output": output}
         questions = {"question": [item['question'] for item in sampled_dataset1], f"group_1_answers": [item['answer'] for item in sampled_dataset1], f"group_2_answers": [item['answer'] for item in sampled_dataset2]}
@@ -243,7 +240,6 @@ class DualSidedLLMProposer(LLMPairwiseProposerWithQuestion):
         """
         Given two datasets, return a list of hypotheses
         """
-        print(dataset1[0].keys())
         assert "question" in dataset1[0].keys(), "'question' column not in dataset"
         all_hypotheses = {"Model A contains more": [], "Model B contains more": []}
         all_logs = []

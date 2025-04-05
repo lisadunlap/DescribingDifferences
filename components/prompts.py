@@ -310,26 +310,6 @@ LLM_DIFF_PROMPT = """
     Do not have "model A" or "model B" in your response. Please order your response in terms of the most common differences between the two models. Your response:
 """
 
-# LLM_ONLY_PROMPT_DUAL = """
-#     The following are the result of asking two different language models to generate an answer for the same questions:
-
-#     {text}
-
-#     I am a machine learning researcher trying to figure out the major differences between these two groups so I can correctly identify which model generated which response for unseen questions. This is a very small portion of the data, so I want the differences to be general.
-
-#     Please output a list (separated by bullet points "*") of distinct concepts or styles that appear more in the outputs of Model A compared to Model B and vice versa. An example of the desired output format:
-#     Model A contains more
-#     * "casual language"
-#     * "lists with repeating phrases"
-#     * "polite language"
-    
-#     Model B contains more
-#     * "formal language"
-#     * "short responses"
-
-#     Each difference should be less than 10 words. Please order your response in terms of the most common differences between the two models. Your response:
-# """
-
 LLM_ONLY_PROMPT_DUAL = """
     The following are the result of asking two different language models to generate an answer for the same questions:
 
